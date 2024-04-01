@@ -14,6 +14,6 @@ app.use(express.urlencoded({extended:true,limit:"16kb"}))//when url is not prope
 
 app.use(express.static("public"))
 
-app.use(cookieParser())
+app.use(cookieParser(qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq))
 
 export { app } 
