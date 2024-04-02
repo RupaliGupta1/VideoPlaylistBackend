@@ -9,11 +9,21 @@ app.use(cors({
 })) //allowing cors 
 
 app.use(express.json({limit:"16kb"}))//when data come in json body
-
 app.use(express.urlencoded({extended:true,limit:"16kb"}))//when url is not proper ie it has some encode values
-
 app.use(express.static("public"))
+app.use(cookieParser("grhjdhjjjjjjhsabhbdjsw"))
 
-app.use(cookieParser(qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq))
 
+//routes import
+
+import userRouter from './user.routes.js'
+
+
+
+
+
+//routes declaration --starring api point
+app.use("/api/v1/users", userRouter);
 export { app } 
+
+//http://localhost:8000/api/v1/users/register

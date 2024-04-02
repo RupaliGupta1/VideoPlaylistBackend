@@ -53,10 +53,10 @@ const userSchema=new Schema(
     )
 
 
-    userSchema.pre("save", async function(next){
+    userSchema.pre("save", async function(next){//here next is working as middleware
         if(!this.isModified("password")) return next();//if pass updation is not so we dont need to again bcrypt our pass
        
-        this.password=bcrypt.hash(this.password, 10)//if upd so take tht pass and ecrypt and save in db
+        this.password=await bcrypt.hash(this.password, 10)//if upd so take tht pass and ecrypt and save in db
         next()
     })
 
