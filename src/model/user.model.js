@@ -1,5 +1,7 @@
 import mongoose,{Schema} from "mongoose";
 import bcrypt from "bcrypt"
+import { ApiError } from "../utils/ApiError";
+
 
 const userSchema=new Schema(
     {
@@ -51,21 +53,21 @@ const userSchema=new Schema(
     }
     )
 
-
+//if pass updation is not so we dont need to again bcrypt our pass
     userSchema.pre("save", async function(next){//here next is working as middleware
-        if(!this.isModified("password")) return next();//if pass updation is not so we dont need to again bcrypt our pass
+        if(!this.isModified("password")) return next();
        
         this.password=await bcrypt.hash(this.password, 10)//if upd so take tht pass and ecrypt and save in db
         next()
     })
-
+//to compare pass during authentication
     userSchema.methods.isPasswordCorrect  = async function 
     (password) {
        await bcrypt.compare(password,this.password)
     }
 
 
-    userSchema.methods.generateAccessToken=function(){
+    userSchema.methods.generateAccessToken=function(){//expire in short duration
        return jwt.sign(
             {
                 _id: this._id,
@@ -79,7 +81,7 @@ const userSchema=new Schema(
             }
         )
     }
-    userSchema.methods.generateRefreshToken=function(){
+    userSchema.methods.generateRefreshToken=function(){//expire in long duration
         return jwt.sign(
             {
                 _id: this._id,

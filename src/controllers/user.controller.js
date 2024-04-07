@@ -4,6 +4,25 @@ import {User} from "../model/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinaryFileupload.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+//make method who can generate tokens here only bcz we ll use it mulitple time ..main code is in user model
+const generateAccessAndRefreshTokens=async(userId)=>
+{
+try {
+    const user=await User.findById(userId)
+    const accessToken= user.generateAccessToken()
+    const refreshToken= user.generateRefreshToken()
+//add reftoken in db
+    user.refreshToken=refreshToken
+    await user.save({validateBeforeSave: false})
+
+    return {accessToken,refreshToken}
+    
+} catch (error) {
+    throw new ApiError(500,"something went wrong while generating tokens")
+}
+}
+
+
 
 //4 param (err,req,res,next)
 
@@ -22,7 +41,7 @@ const registerUser=asyncHandler( async (req,res)=>{
   }
 
   //check if user already exists:check username or email
-  const existedUser=User.findOne({
+  const existedUser=await User.findOne({
     $or: [{ username },{ email }]
    })
 
@@ -33,8 +52,10 @@ const registerUser=asyncHandler( async (req,res)=>{
 
 
   //file is presemt or not-avatar,cover img
+
+  console.log(req.files);
   const avatarLocalPath=req.files?.avatar[0]?.path
-  const coverImageLocalPath=req.files?.coverImage[0]?.path
+  // const coverImageLocalPath=req.files?.coverImage[0]?.path
 
   if(!avatarLocalPath)
   {
@@ -42,9 +63,17 @@ const registerUser=asyncHandler( async (req,res)=>{
   }
 
 
+  let coverImageLocalPath;
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) 
+  {
+    coverImageLocalPath = req.files.coverImage[0].path
+  } 
+
+
+
   //upload them to cloudinary, and is avatar upload in cloudari or not
   const avatar= await uploadOnCloudinary(avatarLocalPath)
-  await uploadOnCloudinary(coverImageLocalPath)
+  const coverImage=await uploadOnCloudinary(coverImageLocalPath)
 
   if(!avatar)
   {
@@ -81,4 +110,42 @@ const registerUser=asyncHandler( async (req,res)=>{
 
 })
 
-export {registerUser,}
+
+//****************************login user*********************************** */
+
+const loginUser=asyncHandler(async (req,res)=>{
+//get email or username, pass
+
+const {email,username,password}=req.body
+
+if(!username || !email)
+{
+  throw new ApiError(400,"username or email is required")
+}
+
+//find the user
+const user=await User.findOne({
+  $or: [{username},{email}]
+})
+if(!user)
+{
+  throw new ApiError(404,"user doesnot exists")
+}
+//pass word check
+
+const isPasswordValid=await user.isPasswordCorrect(password)
+if(!isPasswordValid)
+{
+  throw new ApiError(401,"incorrect password")
+}
+//generate access token and refresh token send to user
+const {accessToken,refreshToken}=await generateAccessAndRefreshTokens(user._id)
+
+//send token in cookie formt
+
+
+})
+
+export {
+  registerUser,
+  loginUser}
