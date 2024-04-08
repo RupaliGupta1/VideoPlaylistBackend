@@ -142,10 +142,58 @@ if(!isPasswordValid)
 const {accessToken,refreshToken}=await generateAccessAndRefreshTokens(user._id)
 
 //send token in cookie formt
+ const loggedInUser=User.findById(user._id)
+ select("-password -refreshToken")
+
+ const options={ //with this cookies cn be modified only from server not fron frontnd
+  httpOnly:true,
+  secure:true
+ }
+
+ return res
+ .status(200).cookie("accessToken",accessToken,options)
+ .cookie("refreshToken",refreshToken,options)
+ .json(
+  new ApiResponse(
+    200,
+    {//if user is tryinh to set cookie itself in localstorge 
+      //it is by choice not imp but best practice to add this 
+      user:loggedInUser,accessToken,refreshToken
+    },
+    "User logged in successfully"
+  )
+ )
 
 
 })
 
+
+const logoutUser=asyncHandler(async(req,res)=>{
+    //we will design our middleware to get logged in usr info that is authmiddleware
+  await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: {
+          refreshToken: undefined
+        }
+      },{
+        new:true
+      }
+    )
+
+    const options={ //with this cookies cn be modified only from server not fron frontnd
+      httpOnly:true,
+      secure:true
+     }
+
+     return res.status(200)
+     .clearCookie("accessToken",accessToken,options)
+     .clearCookie("refreshToken",refreshToken,options)
+     .json(new ApiResponse(200,{},"User logged out"))
+
+})
 export {
   registerUser,
-  loginUser}
+  loginUser,
+logoutUser
+}
