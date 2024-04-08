@@ -7,19 +7,21 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 //make method who can generate tokens here only bcz we ll use it mulitple time ..main code is in user model
 const generateAccessAndRefreshTokens=async(userId)=>
 {
-try {
-    const user=await User.findById(userId)
-    const accessToken= user.generateAccessToken()
-    const refreshToken= user.generateRefreshToken()
-//add reftoken in db
-    user.refreshToken=refreshToken
-    await user.save({validateBeforeSave: false})
+  try {
+    const user = await User.findById(userId)
+    const accessToken = user.generateAccessToken()
+    const refreshToken = user.generateRefreshToken()
 
-    return {accessToken,refreshToken}
-    
+    user.refreshToken = refreshToken
+    await user.save({ validateBeforeSave: false })
+
+    return {accessToken, refreshToken}
+
+
 } catch (error) {
-    throw new ApiError(500,"something went wrong while generating tokens")
+    throw new ApiError(500, "Something went wrong while generating referesh and access token")
 }
+
 }
 
 
@@ -113,59 +115,67 @@ const registerUser=asyncHandler( async (req,res)=>{
 
 //****************************login user*********************************** */
 
-const loginUser=asyncHandler(async (req,res)=>{
-//get email or username, pass
+const loginUser = asyncHandler(async (req, res) =>{
+  // req body -> data
+  // username or email
+  //find the user
+  //password check
+  //access and referesh token
+  //send cookie
 
-const {email,username,password}=req.body
+  const {email, username, password} = req.body
+  console.log(email);
 
-if(!username || !email)
-{
-  throw new ApiError(400,"username or email is required")
-}
+  if (!username && !email) {
+      throw new ApiError(400, "username or email is required")
+  }
+  
+  // Here is an alternative of above code based on logic discussed in video:
+  // if (!(username || email)) {
+  //     throw new ApiError(400, "username or email is required")
+      
+  // }
 
-//find the user
-const user=await User.findOne({
-  $or: [{username},{email}]
-})
-if(!user)
-{
-  throw new ApiError(404,"user doesnot exists")
-}
-//pass word check
+  const user = await User.findOne({
+      $or: [{username}, {email}]
+  })
 
-const isPasswordValid=await user.isPasswordCorrect(password)
-if(!isPasswordValid)
-{
-  throw new ApiError(401,"incorrect password")
-}
-//generate access token and refresh token send to user
-const {accessToken,refreshToken}=await generateAccessAndRefreshTokens(user._id)
+  if (!user) {
+      throw new ApiError(404, "User does not exist")
+  }
 
-//send token in cookie formt
- const loggedInUser=User.findById(user._id)
- select("-password -refreshToken")
+ const isPasswordValid = await user.isPasswordCorrect(password)
+ console.log(isPasswordValid)
 
- const options={ //with this cookies cn be modified only from server not fron frontnd
-  httpOnly:true,
-  secure:true
- }
+ if (!isPasswordValid) {
+  throw new ApiError(401, "Invalid user credentials")
+  }
 
- return res
- .status(200).cookie("accessToken",accessToken,options)
- .cookie("refreshToken",refreshToken,options)
- .json(
-  new ApiResponse(
-    200,
-    {//if user is tryinh to set cookie itself in localstorge 
-      //it is by choice not imp but best practice to add this 
-      user:loggedInUser,accessToken,refreshToken
-    },
-    "User logged in successfully"
+ const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+  const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+  const options = {
+      httpOnly: true,
+      secure: true
+  }
+
+  return res
+  .status(200)
+  .cookie("accessToken", accessToken, options)
+  .cookie("refreshToken", refreshToken, options)
+  .json(
+      new ApiResponse(
+          200, 
+          {
+              user: loggedInUser, accessToken, refreshToken
+          },
+          "User logged In Successfully"
+      )
   )
- )
-
 
 })
+
 
 
 const logoutUser=asyncHandler(async(req,res)=>{

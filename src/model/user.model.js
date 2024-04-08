@@ -62,36 +62,16 @@ const userSchema=new Schema(
 //to compare pass during authentication
     userSchema.methods.isPasswordCorrect  = async function 
     (password) {
-       await bcrypt.compare(password,this.password)
+        console.log(password,this.password);
+      const isMatch= await bcrypt.compare(password,this.password);
+      return isMatch
     }
 
 
-    userSchema.methods.generateAccessToken=function(){//expire in short duration
-       return jwt.sign(
-            {
-                _id: this._id,
-                email:this.email,
-                username:this.username,
-                fullname:this.fullname
-            },
-            process.env.ACCESS_TOKEN_SECRET,
-            {
-                expiresIn:process.env.ACCESS_TOKEN_EXPIRY
-            }
-        )
+    userSchema.methods.generateAccessToken = function(){
     }
-    userSchema.methods.generateRefreshToken=function(){//expire in long duration
-        return jwt.sign(
-            {
-                _id: this._id,
-            },
-            process.env.REFRESH_TOKEN_SECRET,
-            {
-                expiresIn:process.env.REFRESH_TOKEN_EXPIRY
-            }
-        )
+    userSchema.methods.generateRefreshToken = function(){
     }
-
 
 
 export const User=mongoose.model("User",userSchema)
